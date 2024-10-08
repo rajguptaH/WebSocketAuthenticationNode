@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Client</title>
+</head>
+<body>
+    <button onclick="authenticate()">Authenticate</button>
+    <button onclick="getUsers()">Get Users</button>
+    <pre id="response"></pre>
+
+    <script>
+        let socket = new WebSocket('ws://localhost:8080');
+        socket.onopen = function() {
+            console.log("Connection established.");
+        };
+
+        socket.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+        const responsePre = document.getElementById('response');
+
+        switch (data.type) {
+            case "auth":
+                if (data.status === "success") {
+                    responsePre.textContent = 'Authentication Successful: ' + data.message;
+                } else {
+                    responsePre.textContent = 'Authentication Failed: ' + data.message;
+                }
+                break;
+            case "getusers":
+                responsePre.textContent = 'Users: ' + JSON.stringify(data.users, null, 2);
+                break;
+            default:
+                responsePre.textContent = 'Unhandled response: ' + event.data;
+                break;
+        }
+    };
+
+        socket.onerror = function(error) {
+            console.error("WebSocket error: ", error);
+        };
+
+        function authenticate() {
+            const authPayload = { action: "auth", username: "raj", password: "admin@123" };
+            socket.send(JSON.stringify(authPayload));
+        }
+
+        function getUsers() {
+            const getUsersPayload = { action: "getusers" };
+            socket.send(JSON.stringify(getUsersPayload));
+        }
+    </script>
+</body>
+</html>
