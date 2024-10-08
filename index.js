@@ -1,13 +1,25 @@
 const WebSocket = require('ws');
+const config = require('./config/config');
+const { authenticate } = require('./middlewares/authMiddleware');
 const connectionController = require('./websocket-server/controllers/connectionController');
 
-const server = new WebSocket.Server({ port: 8080 });
+const server = new WebSocket.Server({ port: config.port });
 
 server.on('connection', (ws) => {
+    ws.authenticated = false;
+
     ws.on('message', (message) => {
         const parsedMessage = JSON.parse(message);
-        connectionController.handleMessage(ws, parsedMessage);
+        if (parsedMessage.action === 'auth') {
+            authenticate(ws, parsedMessage);
+        } else {
+            connectionController.handleMessage(ws, parsedMessage);
+        }
+    });
+
+    ws.on('error', (error) => {
+        console.error('WebSocket error:', error);
     });
 });
 
-console.log('WebSocket server is running on ws://localhost:8080');
+console.log(`WebSocket server is running on ws://localhost:${config.port}`);

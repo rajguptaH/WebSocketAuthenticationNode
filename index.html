@@ -4,52 +4,62 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WebSocket Client</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        button { margin: 5px; padding: 10px; }
+        pre { background-color: #f1f1f1; padding: 10px; }
+    </style>
 </head>
 <body>
-    <button onclick="authenticate()">Authenticate</button>
-    <button onclick="getUsers()">Get Users</button>
+    <h1>WebSocket Client</h1>
+    <button id="auth-button">Authenticate</button>
+    <button id="get-users-button">Get Users</button>
+    <h3>Response:</h3>
     <pre id="response"></pre>
-
+    
     <script>
-        let socket = new WebSocket('ws://localhost:8080');
+        const socket = new WebSocket('ws://localhost:8080');
+
         socket.onopen = function() {
             console.log("Connection established.");
         };
 
         socket.onmessage = function(event) {
-        const data = JSON.parse(event.data);
-        const responsePre = document.getElementById('response');
+            const data = JSON.parse(event.data);
+            const responsePre = document.getElementById('response');
 
-        switch (data.type) {
-            case "auth":
-                if (data.status === "success") {
-                    responsePre.textContent = 'Authentication Successful: ' + data.message;
-                } else {
-                    responsePre.textContent = 'Authentication Failed: ' + data.message;
+            if (data.error) {
+                responsePre.textContent = 'Error: ' + data.error;
+            } else {
+                switch (data.type) {
+                    case "auth":
+                        responsePre.textContent = data.status === "success" 
+                            ? 'Authentication Successful: ' + data.message
+                            : 'Authentication Failed: ' + data.message;
+                        break;
+                    case "getusers":
+                        responsePre.textContent = 'Users: ' + JSON.stringify(data, null, 2);
+                        break;
+                    default:
+                        responsePre.textContent = 'Unhandled response: ' + event.data;
+                        break;
                 }
-                break;
-            case "getusers":
-                responsePre.textContent = 'Users: ' + JSON.stringify(data.users, null, 2);
-                break;
-            default:
-                responsePre.textContent = 'Unhandled response: ' + event.data;
-                break;
-        }
-    };
+            }
+        };
 
         socket.onerror = function(error) {
             console.error("WebSocket error: ", error);
         };
 
-        function authenticate() {
-            const authPayload = { action: "auth", username: "raj", password: "admin@123" };
+        document.getElementById('auth-button').addEventListener('click', function() {
+            const authPayload = { action: "auth", username: "Raj", password: "admin@123" };
             socket.send(JSON.stringify(authPayload));
-        }
+        });
 
-        function getUsers() {
+        document.getElementById('get-users-button').addEventListener('click', function() {
             const getUsersPayload = { action: "getusers" };
             socket.send(JSON.stringify(getUsersPayload));
-        }
+        });
     </script>
 </body>
 </html>
